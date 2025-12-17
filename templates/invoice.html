@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0.5cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 9pt; 
+            color: #333;
+            line-height: 1.3;
+        }
+        
+        /* Layout Tables */
+        table { width: 100%; border-collapse: collapse; }
+        td { vertical-align: top; padding: 2px; } /* Tight padding */
+        
+        /* Header */
+        .company-title { font-size: 15pt; font-weight: bold; color: #000; margin-bottom: 2px; }
+        .invoice-title { font-size: 16pt; font-weight: bold; color: #000; text-align: right; }
+        
+        /* Product Table */
+        .item-table {
+            width: 100%;
+            border: 1px solid #000;
+            margin-top: 10px;
+        }
+        .item-table th {
+            background-color: #f2f2f2;
+            color: #000;
+            padding: 4px 2px;
+            font-weight: bold;
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 8pt;
+        }
+        .item-table td {
+            border: 1px solid #ccc;
+            padding: 4px 2px;
+            font-size: 9pt;
+        }
+        
+        /* Utility */
+        .right { text-align: right; }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .box-header { 
+            font-weight: bold; 
+            border-bottom: 1px solid #ccc; 
+            padding-bottom: 3px; 
+            margin-bottom: 3px;
+            display: block;
+        }
+        
+        /* Totals */
+        .totals-table td { padding: 3px; }
+        .total-row td { 
+            border-top: 1px solid #000; 
+            border-bottom: 1px solid #000;
+            font-weight: bold;
+            background-color: #f0f0f0;
+            padding: 5px 3px;
+        }
+
+        /* Signature - Simple block at bottom */
+        .signature-section {
+            width: 100%;
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+
+    <table style="margin-bottom: 15px;">
+        <tr>
+            <td width="60%">
+                <div class="company-title">{{ business.name }}</div>
+                <div>{{ business.address_line1 }}</div>
+                <div>{{ business.address_line2 }}</div>
+                <div>{{ business.country }}</div>
+                <div style="margin-top: 3px;">
+                    <strong>GSTIN:</strong> {{ business.gstin }} <br>
+                    <strong>Contact:</strong> {{ business.contact }} <br>
+                    <strong>Email:</strong> {{ business.email }}
+                </div>
+            </td>
+            <td width="40%" align="right">
+                <div class="invoice-title">TAX INVOICE</div>
+                <br>
+                <table style="width: 100%">
+                    <tr>
+                        <td align="right" class="bold">Invoice #:</td>
+                        <td align="right">{{ invoice_number }}</td>
+                    </tr>
+                    <tr>
+                        <td align="right" class="bold">Date:</td>
+                        <td align="right">{{ invoice_date }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table cellpadding="5" style="width: 100%; margin-bottom: 10px;">
+        <tr>
+            <td width="48%" style="border: 1px solid #ccc; padding: 5px;">
+                <div class="box-header">Bill To</div>
+                <div class="bold">{{ bill_to.name }}</div>
+                <div>{{ bill_to.address }}</div>
+                <div>{{ bill_to.city }}</div>
+                <div>{{ bill_to.state }} - {{ bill_to.pincode }}</div>
+            </td>
+            <td width="4%"></td> 
+            <td width="48%" style="border: 1px solid #ccc; padding: 5px;">
+                <div class="box-header">Ship To</div>
+                <div class="bold">{{ ship_to.name }}</div>
+                <div>{{ ship_to.address }}</div>
+                <div>{{ ship_to.city }}</div>
+                <div>{{ ship_to.state }} - {{ ship_to.pincode }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="item-table" repeat="1">
+        <thead>
+            <tr>
+                <th width="5%">#</th>
+                <th width="32%">Item & Description</th>
+                <th width="10%">HSN/SAC</th>
+                <th width="7%">Qty</th>
+                <th width="10%">Rate</th>
+                <th width="6%">CGST%</th>
+                <th width="8%">Amt</th>
+                <th width="6%">SGST%</th>
+                <th width="8%">Amt</th>
+                <th width="12%">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="center">{{ item.sno }}</td>
+                <td>{{ item.description }}</td>
+                <td class="center">{{ item.hsn }}</td>
+                <td class="center">{{ "{:.2f}".format(item.qty) }}</td>
+                <td class="right">{{ "{:,.2f}".format(item.rate) }}</td>
+                <td class="center">{{ "{:.0f}".format(item.cgst_rate) }}%</td>
+                <td class="right">{{ "{:,.2f}".format(item.cgst_amt) }}</td>
+                <td class="center">{{ "{:.0f}".format(item.sgst_rate) }}%</td>
+                <td class="right">{{ "{:,.2f}".format(item.sgst_amt) }}</td>
+                <td class="right bold">{{ "{:,.2f}".format(item.taxable_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <br>
+
+    <table style="width: 100%">
+        <tr>
+            <td width="55%">
+                <div style="background-color: #f9f9f9; padding: 8px; border: 1px solid #ccc; margin-right: 10px; margin-bottom: 10px;">
+                    <strong>Total In Words:</strong><br>
+                    {{ amount_in_words }}
+                </div>
+                
+                <div style="font-size: 9.5pt;">
+                    <strong>Notes:</strong><br>
+                    Please make cheques in favor of " Rifa Appliances ". <br>
+                    <div style="margin-top: 4px;">
+                        <b>Bank Details:</b> Union Bank of India, Hasthamaptty, Salem<br>
+                        <b>A/c No:</b> 584101010050209 <br>
+                        <b>IFSC:</b> UBIN0558419
+                    </div>
+                    <br>
+                    Thanks for your business.
+                </div>
+            </td>
+            
+            <td width="45%">
+                <table class="totals-table">
+                    <tr>
+                        <td>Sub Total</td>
+                        <td class="right">{{ "{:,.2f}".format(sub_total) }}</td>
+                    </tr>
+                    <tr>
+                        <td>CGST Total</td>
+                        <td class="right">{{ "{:,.2f}".format(cgst_total) }}</td>
+                    </tr>
+                    <tr>
+                        <td>SGST Total</td>
+                        <td class="right">{{ "{:,.2f}".format(sgst_total) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Adjustment</td>
+                        <td class="right">{{ "{:,.2f}".format(adjustment) }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total</td>
+                        <td class="right">Rs. {{ "{:,.2f}".format(grand_total) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Payment Made (-)</td>
+                        <td class="right">{{ "{:,.2f}".format(payment_made) }}</td>
+                    </tr>
+                    <tr style="font-size: 10pt; font-weight: bold; background-color: #ddd;">
+                        <td>Balance Due</td>
+                        <td class="right">Rs. {{ "{:,.2f}".format(balance_due) }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div class="signature-section">
+        <table width="100%">
+            <tr>
+                <td align="right">
+                    <div style="border-top: 1px solid #000; width: 200px; display: inline-block; text-align: center; padding-top: 5px;">
+                        Authorized Signature
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>
